@@ -126,7 +126,7 @@ P-Tuning v2是对v1的增强版本，在每一层都添加了可训练的提示�
 deepseek_lora_ptuning_env/
 ├── app.py                  # Web应用主程序
 ├── inference.py            # 推理和对话实现
-├── train.py                # 训练入口脚本
+├── train.py                # 命令行训练入口脚本
 ├── scripts/
 │   ├── train_lora.py       # LoRA微调实现
 │   ├── train_ptuning_v1.py # P-Tuning v1实现
