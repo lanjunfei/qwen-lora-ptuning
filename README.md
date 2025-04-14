@@ -27,8 +27,8 @@
 
 1. 克隆此仓库：
    ```bash
-   git clone https://github.com/yourusername/deepseek_lora_ptuning_env.git
-   cd deepseek_lora_ptuning_env
+   git clone https://github.com/lanjunfei/qwen-lora-ptuning
+   cd qwen-lora-ptuning
    ```
 
 2. 安装依赖：
