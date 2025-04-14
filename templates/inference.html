@@ -1,0 +1,266 @@
+<!-- templates/inference.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>已微调模型对话</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        form {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        select, input, button {
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #response_area {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            padding: 5px 8px;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        .card {
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>已微调模型对话</h1>
+
+    <form id="chat_form">
+        <label>选择微调模型:
+            <select id="model" name="model">
+                {% for model in models %}
+                <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
+            </select>
+        </label><br><br>
+        <input type="text" id="question" name="question" placeholder="输入您的问题..." style="width:80%;">
+        <button type="submit">发送</button>
+    </form>
+
+    <h3>模型回答</h3>
+    <pre id="response_area">等待您的提问...</pre>
+
+    <!-- 添加微调模型列表部分 -->
+    <div class="card">
+        <div class="card-header">已微调模型列表</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模型名称</th>
+                            <th>大小</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tuned-model-list">
+                        <!-- 这里将动态填充微调模型列表 -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="tuned-model-loading" class="text-center">
+                <div>加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <a href="/" style="text-decoration: none; color: #3498db;">← 返回主页</a>
+    </div>
+
+    <script>
+        // 加载已微调的模型列表
+        function loadTunedModelList() {
+            const modelList = document.getElementById('tuned-model-list');
+            const modelLoading = document.getElementById('tuned-model-loading');
+            
+            fetch('/api/tuned_models')
+                .then(response => response.json())
+                .then(data => {
+                    modelLoading.style.display = 'none';
+                    
+                    if (data.models.length === 0) {
+                        modelList.innerHTML = '<tr><td colspan="3" class="text-center">暂无已微调模型</td></tr>';
+                        return;
+                    }
+                    
+                    modelList.innerHTML = '';
+                    data.models.forEach(model => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${model.name}</td>
+                            <td>${model.size}</td>
+                            <td>
+                                <button class="delete-btn delete-tuned-model" data-model="${model.name}">
+                                    删除
+                                </button>
+                            </td>
+                        `;
+                        modelList.appendChild(row);
+                    });
+                    
+                    // 添加删除按钮事件监听
+                    document.querySelectorAll('.delete-tuned-model').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const modelName = this.getAttribute('data-model');
+                            if (confirm(`确定要删除微调模型 ${modelName} 吗？此操作不可恢复！`)) {
+                                deleteTunedModel(modelName);
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    modelLoading.style.display = 'none';
+                    modelList.innerHTML = `<tr><td colspan="3" class="text-center">加载失败: ${error.message}</td></tr>`;
+                    console.error('获取微调模型列表失败:', error);
+                });
+        }
+
+        // 删除微调模型
+        function deleteTunedModel(modelName) {
+            fetch(`/api/tuned_models/${modelName}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 显示成功消息
+                        alert(data.message);
+                        // 重新加载模型列表并刷新选择器
+                        loadTunedModelList();
+                        // 刷新页面以更新选择器
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        alert(`删除失败: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除微调模型错误:', error);
+                    alert('删除模型时发生错误，请查看控制台');
+                });
+        }
+
+        // 聊天表单提交处理
+        document.getElementById("chat_form").onsubmit = async function(e) {
+            e.preventDefault();
+            const model = document.getElementById("model").value;
+            const question = document.getElementById("question").value;
+            
+            if (!question.trim()) {
+                alert("请输入问题");
+                return;
+            }
+            
+            // 显示加载状态
+            const responseArea = document.getElementById("response_area");
+            responseArea.textContent = "思考中...";
+            
+            // 添加计时器，显示已等待时间
+            let waitTime = 0;
+            const timer = setInterval(() => {
+                waitTime += 1;
+                if (waitTime <= 120) { // 最多等待2分钟
+                    responseArea.textContent = `思考中...(已等待 ${waitTime} 秒)`;
+                } else {
+                    clearInterval(timer);
+                    responseArea.textContent += "\n\n注意：模型响应时间较长，但仍在处理中。大型模型(如7B+)可能需要更多时间生成回答。";
+                }
+            }, 1000);
+            
+            try {
+                // 设置请求超时
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+                
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                    body: `model=${encodeURIComponent(model)}&question=${encodeURIComponent(question)}`,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                clearInterval(timer);
+                
+                const data = await res.json();
+                responseArea.textContent = data.answer;
+            } catch (error) {
+                clearInterval(timer);
+                if (error.name === 'AbortError') {
+                    responseArea.textContent = "请求超时，模型可能需要较长时间处理。请尝试使用较小的模型或简化问题。";
+                } else {
+                    responseArea.textContent = "请求出错: " + error;
+                }
+            }
+        };
+
+        // 页面加载时获取微调模型列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTunedModelList();
+        });
+    </script>
+</body>
+</html>

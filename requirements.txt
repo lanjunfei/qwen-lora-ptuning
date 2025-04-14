@@ -1,0 +1,31 @@
+# 基础框架
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# 深度学习基础
+torch>=2.0.0
+transformers>=4.36.0
+accelerate>=0.23.0
+
+# 微调相关
+peft>=0.5.0
+datasets>=2.14.0
+bitsandbytes>=0.41.1  # 用于量化，可选但推荐安装
+
+# 模型下载与管理
+huggingface_hub>=0.19.0
+safetensors>=0.4.0
+
+# 工具库
+tqdm>=4.66.0
+humanize>=4.8.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# 日志和格式化
+colorama>=0.4.6
+rich>=13.5.0
+
+# 优化和加速（可选）
+sentencepiece>=0.1.99  # 一些模型的分词器需要
+einops>=0.6.1  # 张量操作优化
